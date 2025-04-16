@@ -33,8 +33,8 @@ columns_to_use = [
 
 # ==== TRAINING ON CLEAN DATA ==== 
 if not os.path.exists("lstm_model.keras"):
-    file_path = "C:\\Users\\Pc\\Desktop\\data\\train_data.csv"
-    df = pd.read_csv(file_path, delimiter=',')
+    file_path = "train_data.csv"  # ✅ just the filename
+    df = pd.read_csv(file_path)
     df['timeStamp'] = pd.to_datetime(df['timeStamp'])
     train_data = df[columns_to_use].dropna().reset_index(drop=True)
 
