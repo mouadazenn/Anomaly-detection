@@ -1,0 +1,35 @@
++ LSTM Autoencoder Sensor Monitoring Dashboard
+This dashboard is built with Streamlit and uses an LSTM autoencoder to monitor sensor behavior and detect anomalies in real-time. The model is trained on clean data where the sensor was working normally, and it's able to flag abnormal behavior in new files based on reconstruction error.
+
+# What You Can Do With It
+Upload a CSV file containing new sensor readings
+
+See plots of raw signals for any selected feature
+
+Track the model's reconstruction error and highlight abnormal segments
+
+Pinpoint which sensor feature contributed most to each anomaly
+
+View a breakdown of errors per feature to better understand how the system is behaving
+
+Explore all anomalies in a clean, scrollable table
+
+# How It Works
+The core of the system is an LSTM autoencoder. It learns how the sensor normally behaves over time, and then compares that to incoming signals. If the model can't reconstruct the input well, it raises a flag — meaning the input doesn't match the expected pattern.
+
+This works really well for subtle issues or early signs of failure that aren’t obvious to the eye.
+
+# Input File Format
+The dashboard accepts .csv files with time-series data from your sensor system.
+
+It currently expects the following columns:
+
+cur_1530, cur_1310
+
+intpl_ntc_1530, intpl_ntc_1310
+
+intpl_rawPd1, intpl_rawPd2
+
+timeStamp (datetime format)
+
+Make sure your timestamps are clean and consistent.
