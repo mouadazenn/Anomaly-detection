@@ -40,7 +40,12 @@ if not os.path.exists("lstm_model.keras"):
             except:
                 pass
 
-    df['timeStamp'] = pd.to_datetime(df['timeStamp'])
+    df.columns = df.columns.str.strip().str.lower()
+
+    if 'timestamp' in df.columns:
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', errors='coerce')
+    else:
+        raise ValueError("❌ Column 'timestamp' not found. Make sure it's named exactly and has no spaces.")
     train_data = df[columns_to_use].dropna().reset_index(drop=True)
 
     scaler = MinMaxScaler()
