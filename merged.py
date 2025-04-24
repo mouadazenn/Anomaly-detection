@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-.
+
+@author: Pc
+"""
+
+# -*- coding: utf-8 -*-
+"""
+# Vtech lasers&sensors
 """
 
 import pandas as pd
@@ -34,12 +40,7 @@ if not os.path.exists("lstm_model.keras"):
             except:
                 pass
 
-    df.columns = df.columns.str.strip().str.lower()
-    if 'timestamp' in df.columns:
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', errors='coerce')
-    else:
-        raise ValueError("Missing 'timestamp' column in training data")
-
+    df['timeStamp'] = pd.to_datetime(df['timeStamp'])
     train_data = df[columns_to_use].dropna().reset_index(drop=True)
 
     scaler = MinMaxScaler()
@@ -77,22 +78,21 @@ if uploaded_file is not None:
             except:
                 pass
 
-    df_new.columns = df_new.columns.str.strip().str.lower()
-    if 'timestamp' in df_new.columns:
-        df_new['timestamp'] = pd.to_datetime(df_new['timestamp'], unit='s', errors='coerce')
-    else:
-        st.error("Missing 'timestamp' column in uploaded file")
+    df_new['timeStamp'] = pd.to_datetime(df_new['timeStamp'],unit = 's')
 
+
+    # Rename uploaded columns to match training schema
     rename_mapping = {
         'cur_1530': 'cur_1530',
         'cur_1310': 'cur_1310',
         'rec_ntc_1530': 'intpl_ntc_1530',
         'rec_ntc_1310': 'intpl_ntc_1310',
-        'rawpd1': 'intpl_rawPd1',
-        'rawpd2': 'intpl_rawPd2'
+        'rawPd1': 'intpl_rawPd1',
+        'rawPd2': 'intpl_rawPd2'
     }
     df_new.rename(columns=rename_mapping, inplace=True)
 
+    # Ensure all required columns exist
     missing_columns = [col for col in columns_to_use if col not in df_new.columns]
     if missing_columns:
         st.error(f"Missing columns in uploaded file: {missing_columns}")
@@ -117,13 +117,13 @@ if uploaded_file is not None:
         threshold = np.percentile(reconstruction_error, 98)
         anomalies = reconstruction_error > threshold
 
-        clean_timestamps = df_new.loc[df_new[columns_to_use].dropna().index, 'timestamp'].reset_index(drop=True)
+        clean_timestamps = df_new.loc[df_new[columns_to_use].dropna().index, 'timeStamp'].reset_index(drop=True)
         timestamp_sequence = clean_timestamps.iloc[time_steps:].reset_index(drop=True)
 
         results_df = pd.DataFrame({
             'reconstruction_error': reconstruction_error,
             'anomaly': anomalies,
-            'timestamp': timestamp_sequence,
+            'timeStamp': timestamp_sequence,
             'responsible_feature': responsible_features
         })
 
@@ -134,16 +134,16 @@ if uploaded_file is not None:
 
         st.subheader(f"{feature} Over Time")
         fig1, ax1 = plt.subplots(figsize=(12, 4))
-        ax1.plot(results_df['timestamp'], results_df[feature], label=feature)
+        ax1.plot(results_df['timeStamp'], results_df[feature], label=feature)
         ax1.set_xlabel("Timestamp")
         ax1.set_ylabel("Value")
         st.pyplot(fig1)
 
         st.subheader("Reconstruction Error Over Time")
         fig2, ax2 = plt.subplots(figsize=(12, 4))
-        ax2.plot(results_df['timestamp'], results_df['reconstruction_error'], label='Reconstruction Error')
+        ax2.plot(results_df['timeStamp'], results_df['reconstruction_error'], label='Reconstruction Error')
         anomaly_points = results_df[results_df['anomaly'] == True]
-        ax2.scatter(anomaly_points['timestamp'], anomaly_points['reconstruction_error'], color='red', marker='x', label='Anomaly')
+        ax2.scatter(anomaly_points['timeStamp'], anomaly_points['reconstruction_error'], color='red', marker='x', label='Anomaly')
         ax2.axhline(y=threshold, color='orange', linestyle='--', label='Threshold')
         ax2.set_xlabel("Timestamp")
         ax2.set_ylabel("Reconstruction Error")
@@ -151,12 +151,12 @@ if uploaded_file is not None:
         st.pyplot(fig2)
 
         if st.checkbox("Show Anomaly Table"):
-            st.dataframe(anomaly_points[['timestamp', 'reconstruction_error', 'responsible_feature']])
+            st.dataframe(anomaly_points[['timeStamp', 'reconstruction_error', 'responsible_feature']])
 
         if st.checkbox("Show Feature-Level Errors"):
             fig3, ax3 = plt.subplots(figsize=(14, 5))
             for i, feat in enumerate(columns_to_use):
-                ax3.plot(results_df['timestamp'], feature_errors_mean[:, i], label=feat)
+                ax3.plot(results_df['timeStamp'], feature_errors_mean[:, i], label=feat)
             ax3.set_title("Feature-wise Reconstruction Errors")
             ax3.set_xlabel("Timestamp")
             ax3.set_ylabel("Error")
