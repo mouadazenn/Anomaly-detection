@@ -31,7 +31,7 @@ columns_to_use = [
 # ==== TRAINING ON CLEAN DATA ==== 
 if not os.path.exists("lstm_model.keras"):
     file_path = "train_data.csv"
-    df = pd.read_csv(file_path, delimiter=';')
+    df = pd.read_csv(file_path)
 
     for col in df.columns:
         if df[col].dtype == 'object':
@@ -40,12 +40,8 @@ if not os.path.exists("lstm_model.keras"):
             except:
                 pass
 
-    df.columns = df.columns.str.strip().str.lower()
-
-    if 'timestamp' in df.columns:
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', errors='coerce')
-    else:
-        raise ValueError("❌ Column 'timestamp' not found. Make sure it's named exactly and has no spaces.")
+    df['timeStamp'] = pd.to_datetime(df['timeStamp'])
+    
     train_data = df[columns_to_use].dropna().reset_index(drop=True)
 
     scaler = MinMaxScaler()
