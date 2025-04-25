@@ -114,18 +114,17 @@ if uploaded_files:
 
     st.subheader(f"{feature} Over Time")
     fig1 = px.line(results_df, x='timeStamp', y=feature, title=f"{feature} Over Time", markers=True,
-                  color_discrete_sequence=['#0d47a1'])
-    fig1.update_layout(xaxis_title="Timestamp", yaxis_title="Value", hovermode="x unified",
-                       plot_bgcolor="#0f1a2b",  font=dict(color="white"))
+                  color_discrete_sequence=['#1f77b4'])
+    fig1.update_layout(xaxis_title="Timestamp", yaxis_title="Value", hovermode="x unified")
     st.plotly_chart(fig1, use_container_width=True)
 
     st.subheader("Reconstruction Error Over Time")
     fig2 = px.line(results_df, x='timeStamp', y='reconstruction_error', title="Reconstruction Error with Anomalies",
-                  color_discrete_sequence=['#0d47a1'])
+                  color_discrete_sequence=['#1f77b4'])
     fig2.add_scatter(x=results_df['timeStamp'][anomalies], y=results_df['reconstruction_error'][anomalies],
                      mode='markers', name='Anomalies', marker=dict(color='red', symbol='x'))
-    fig2.update_layout(xaxis_title="Timestamp", yaxis_title="Reconstruction Error", hovermode="x unified",
-                       plot_bgcolor="#0f1a2b", font=dict(color="white"))
+    fig2.update_layout(xaxis_title="Timestamp", yaxis_title="Reconstruction Error", hovermode="x unified")
+                       
     st.plotly_chart(fig2, use_container_width=True)
 
     if st.checkbox("Show Anomaly Table"):
@@ -133,7 +132,7 @@ if uploaded_files:
 
     if st.checkbox("Show Feature-Level Errors"):
         fig3 = go.Figure()
-        colors = ['#82b1ff', '#64b5f6', '#4fc3f7', '#29b6f6', '#03a9f4', '#0288d1']
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
         for i, feat in enumerate(columns_to_use):
             fig3.add_trace(go.Scatter(
                 x=results_df['timeStamp'],
@@ -143,13 +142,9 @@ if uploaded_files:
                 line=dict(color=colors[i % len(colors)])
             ))
         fig3.update_layout(title="Feature-wise Reconstruction Errors",
-                           xaxis_title="Timestamp",
-                           yaxis_title="Error",
-                           template="plotly_dark",
-                           plot_bgcolor="#0f1a2b",
-                           paper_bgcolor="#0f1a2b",
-                           font=dict(color="white"),
-                           hovermode="x unified")
+                               xaxis_title="Timestamp",
+                               yaxis_title="Error",
+                               hovermode="x unified")
         st.plotly_chart(fig3, use_container_width=True)
 else:
     st.info("Please upload one or more CSV files to begin.")
