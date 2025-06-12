@@ -1,25 +1,9 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 12 11:50:08 2025
-
-@author: Pc
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 12 11:03:01 2025
-
-@author: Pc
-"""
-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from numpy.fft import rfft, rfftfreq
 from scipy.signal import butter, filtfilt
-
-
 
 # === STREAMLIT UI ===
 st.title("📈 Interactive Sensor Signal Analysis")
@@ -71,20 +55,26 @@ if uploaded_files:
     pd1_col = st.selectbox("Select Pd1 column", options=labels)
     pd2_col = st.selectbox("Select Pd2 column", options=labels)
 
-    # Time range selection
-    time_data = df[time_col]
-    try:
-        t = pd.to_datetime(time_data, format="%Y-%m-%d %H:%M:%S", errors='coerce')
-        t = (t - t.iloc[0]).dt.total_seconds()
-    except:
-        t = pd.to_numeric(time_data, errors='coerce')
+    time_data = df[time_col].astype(str)
 
-    t = t.dropna()
+    # === Fix time parsing for comma-separated Unix + microsecond format ===
+    if time_data.str.contains(",").any():
+        try:
+            df[['ts_sec', 'ts_micro']] = time_data.str.split(",", expand=True)
+            df['ts_sec'] = pd.to_numeric(df['ts_sec'], errors='coerce')
+            df['ts_micro'] = pd.to_numeric(df['ts_micro'], errors='coerce')
+            df['__time__'] = df['ts_sec'] + df['ts_micro'] * 1e-6
+        except Exception as e:
+            st.error(f"❌ Failed to parse time: {e}")
+            st.stop()
+    else:
+        df['__time__'] = pd.to_numeric(time_data, errors='coerce')
+
+    t = df['__time__'].dropna()
     if t.empty:
         st.error("❌ Could not parse time column correctly. Please check formatting.")
         st.stop()
 
-    df['__time__'] = t.reset_index(drop=True)
     fs = len(t) / (t.iloc[-1] - t.iloc[0]) if len(t) > 1 else 0
     if fs <= 0:
         st.error("⚠️ Sampling frequency is invalid. Check your time column.")
