@@ -19,7 +19,7 @@ import plotly.graph_objects as go
 from numpy.fft import rfft, rfftfreq
 from scipy.signal import butter, filtfilt
 
-st.set_page_config(layout="wide")
+
 
 # === STREAMLIT UI ===
 st.title("📈 Interactive Sensor Signal Analysis")
