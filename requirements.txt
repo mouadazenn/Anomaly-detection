@@ -3,7 +3,6 @@ pandas
 numpy
 scikit-learn
 matplotlib
-tensorflow
 joblib
 plotly
 
