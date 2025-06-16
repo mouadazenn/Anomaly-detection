@@ -39,13 +39,12 @@ def compute_fft(signal, fs):
     freqs = rfftfreq(N, d=1/fs)
     return freqs, np.abs(fft_values)
 
-# === File Upload ===
-uploaded_files = st.file_uploader("📁 Upload CSV files", type="csv", accept_multiple_files=False)
+
 
 if uploaded_files:
     df = merge_uploaded_csvs([uploaded_files])
-    expected_cols = ['time', 'temp', 'pd1', 'pd2']
-    
+    expected_cols = ['timeStamp', 'ntc_1530', 'rawPd1', 'rawPd2']
+
     if not all(col in df.columns for col in expected_cols):
         st.error(f"Missing required columns. Expected: {expected_cols}")
         st.stop()
