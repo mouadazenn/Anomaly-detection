@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from numpy.fft import rfft, rfftfreq
 from scipy.signal import butter, filtfilt
 
-
-st.title("📈 Pd1 / Pd2 Signal Analysis Dashboard")
+# === STREAMLIT UI ===
+st.title("📈 Interactive Sensor Signal Analysis")
 
 uploaded_files = st.file_uploader("Upload CSV Files", type="csv", accept_multiple_files=True)
 
@@ -24,12 +24,15 @@ def merge_uploaded_csvs(uploaded_files):
     merged_df = pd.concat(dfs, ignore_index=True)
     return merged_df
 
-
 # === Signal Processing Functions ===
 def bandpass_filter(signal, lowcut, highcut, fs, order=4):
+    if fs <= 0 or lowcut >= highcut:
+        raise ValueError("Invalid filter settings: ensure fs > 0 and lowcut < highcut.")
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
+    if not (0 < low < high < 1):
+        raise ValueError(f"Normalized cutoff frequencies must be between 0 and 1. Got low={low}, high={high}")
     b, a = butter(order, [low, high], btype='band')
     return filtfilt(b, a, signal)
 
@@ -39,86 +42,86 @@ def compute_fft(signal, fs):
     freqs = rfftfreq(N, d=1/fs)
     return freqs, np.abs(fft_values)
 
-
-
 if uploaded_files:
     df = merge_uploaded_csvs(uploaded_files)
-    expected_cols = ['timeStamp', 'ntc_1530', 'rawPd1', 'rawPd2']
+    st.success("✅ Data loaded and merged")
 
-    if not all(col in df.columns for col in expected_cols):
-        st.error(f"Missing required columns. Expected: {expected_cols}")
+    # Show raw data preview
+    with st.expander("🔍 Preview Merged Data"):
+        st.write(df.head())
+
+    labels = df.columns.tolist()
+    time_col = st.selectbox("Select time column", options=labels)
+    pd1_col = st.selectbox("Select Pd1 column", options=labels)
+    pd2_col = st.selectbox("Select Pd2 column", options=labels)
+
+    time_data = df[time_col].astype(str)
+
+    # === Fix time parsing for comma-separated Unix + microsecond format ===
+    if time_data.str.contains(",").any():
+        try:
+            df[['ts_sec', 'ts_micro']] = time_data.str.split(",", expand=True)
+            df['ts_sec'] = pd.to_numeric(df['ts_sec'], errors='coerce')
+            df['ts_micro'] = pd.to_numeric(df['ts_micro'], errors='coerce')
+            df['__time__'] = df['ts_sec'] + df['ts_micro'] * 1e-6
+        except Exception as e:
+            st.error(f"❌ Failed to parse time: {e}")
+            st.stop()
+    else:
+        df['__time__'] = pd.to_numeric(time_data, errors='coerce')
+
+    t = df['__time__'].dropna()
+    if t.empty:
+        st.error("❌ Could not parse time column correctly. Please check formatting.")
         st.stop()
 
-    # Convert time and numeric columns
-    df['time'] = pd.to_numeric(df['time'], errors='coerce')
-    for col in ['temp', 'pd1', 'pd2']:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    df.dropna(inplace=True)
-
-    fs = len(df) / (df['time'].iloc[-1] - df['time'].iloc[0])
-    st.success(f"✅ Data loaded | Sampling frequency estimated: {fs:.2f} Hz")
-
-    st.write("### 🔍 Signal Preview")
-    st.dataframe(df.head())
-
-    # Range selection
-    start_idx, end_idx = st.slider("Select index range for analysis",
-                                   0, len(df) - 1, (0, len(df) - 1), step=1)
-
-    df_portion = df.iloc[start_idx:end_idx]
-    time_portion = df_portion['time'].to_numpy()
-    pd1_portion = df_portion['pd1'].to_numpy()
-    pd2_portion = df_portion['pd2'].to_numpy()
-
-    if len(pd1_portion) < 28 or len(pd2_portion) < 28:
-        st.warning("⚠️ Please select a larger portion (at least 28 points required).")
+    fs = len(t) / (t.iloc[-1] - t.iloc[0]) if len(t) > 1 else 0
+    if fs <= 0:
+        st.error("⚠️ Sampling frequency is invalid. Check your time column.")
         st.stop()
 
-    # Filter inputs
-    st.write("### ⚙️ Filter Settings")
-    col1, col2 = st.columns(2)
-    with col1:
-        lowcut = st.number_input("Low cutoff frequency (Hz)", value=0.8)
-    with col2:
-        highcut = st.number_input("High cutoff frequency (Hz)", value=16.0)
+    start, end = st.slider("Select time range (in seconds)", float(t.min()), float(t.max()), (float(t.min()), float(t.max())))
+    mask = (df['__time__'] >= start) & (df['__time__'] <= end)
+
+    pd1 = pd.to_numeric(df.loc[mask, pd1_col], errors='coerce').dropna()
+    pd2 = pd.to_numeric(df.loc[mask, pd2_col], errors='coerce').dropna()
+    t_selected = df.loc[mask, '__time__'].iloc[:min(len(pd1), len(pd2))]
+    pd1 = pd1.iloc[:len(t_selected)]
+    pd2 = pd2.iloc[:len(t_selected)]
+
+    # === Fixed filter values (no user input) ===
+    lowcut = 0.8
+    highcut = 16.0
 
     try:
-        filtered_pd1 = bandpass_filter(pd1_portion, lowcut, highcut, fs)
-        filtered_pd2 = bandpass_filter(pd2_portion, lowcut, highcut, fs)
+        filtered_pd1 = bandpass_filter(pd1, lowcut, highcut, fs)
+        filtered_pd2 = bandpass_filter(pd2, lowcut, highcut, fs)
     except ValueError as e:
-        st.error(f"⚠️ Filter error: {e}")
-        st.stop()
+        st.warning("⚠️ Filter error. Displaying raw signals only.")
+        filtered_pd1 = pd1
+        filtered_pd2 = pd2
 
     # === PLOTS ===
-    st.write("### 📉 Time Domain Signal")
-    fig, ax = plt.subplots()
-    ax.plot(time_portion, pd1_portion, label='Raw Pd1')
-    ax.plot(time_portion, filtered_pd1, label='Filtered Pd1')
-    ax.plot(time_portion, pd2_portion, label='Raw Pd2')
-    ax.plot(time_portion, filtered_pd2, label='Filtered Pd2')
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Amplitude")
-    ax.legend()
-    ax.grid()
-    st.pyplot(fig)
+    st.subheader("📉 Time Domain Signals")
+    fig_time = go.Figure()
+    fig_time.add_trace(go.Scatter(x=t_selected, y=pd1, mode='lines', name='Original Pd1'))
+    fig_time.add_trace(go.Scatter(x=t_selected, y=filtered_pd1, mode='lines', name='Filtered Pd1'))
+    fig_time.add_trace(go.Scatter(x=t_selected, y=pd2, mode='lines', name='Original Pd2'))
+    fig_time.add_trace(go.Scatter(x=t_selected, y=filtered_pd2, mode='lines', name='Filtered Pd2'))
+    fig_time.update_layout(title="Time Domain Signal", xaxis_title="Time (s)", yaxis_title="Amplitude")
+    st.plotly_chart(fig_time, use_container_width=True)
 
-    st.write("### 🧪 Pd1 vs Pd2")
-    fig2, ax2 = plt.subplots()
-    ax2.scatter(pd1_portion, pd2_portion, alpha=0.6)
-    ax2.set_xlabel("Pd1")
-    ax2.set_ylabel("Pd2")
-    ax2.set_title("Pd1 vs Pd2 Scatter")
-    ax2.grid()
-    st.pyplot(fig2)
+    st.subheader("🧪 Pd1 vs Pd2")
+    fig_scatter = go.Figure()
+    fig_scatter.add_trace(go.Scatter(x=pd1, y=pd2, mode='markers', name='Pd1 vs Pd2', marker=dict(opacity=0.6)))
+    fig_scatter.update_layout(title="Pd1 vs Pd2 Scatter Plot", xaxis_title="Pd1", yaxis_title="Pd2")
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
-    st.write("### 📊 Frequency Domain (FFT)")
+    st.subheader("📊 Frequency Domain (FFT)")
     f1, fft1 = compute_fft(filtered_pd1, fs)
     f2, fft2 = compute_fft(filtered_pd2, fs)
-    fig3, ax3 = plt.subplots()
-    ax3.plot(f1, fft1, label='FFT Pd1')
-    ax3.plot(f2, fft2, label='FFT Pd2')
-    ax3.set_xlabel("Frequency (Hz)")
-    ax3.set_ylabel("Amplitude")
-    ax3.legend()
-    ax3.grid()
-    st.pyplot(fig3)
+    fig_fft = go.Figure()
+    fig_fft.add_trace(go.Scatter(x=f1, y=fft1, mode='lines', name='FFT Pd1'))
+    fig_fft.add_trace(go.Scatter(x=f2, y=fft2, mode='lines', name='FFT Pd2'))
+    fig_fft.update_layout(title="Frequency Domain Signal", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
+    st.plotly_chart(fig_fft, use_container_width=True)
