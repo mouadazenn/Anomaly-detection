@@ -42,7 +42,7 @@ def compute_fft(signal, fs):
 
 
 if uploaded_files:
-    df = merge_uploaded_csvs([uploaded_files])
+    df = merge_uploaded_csvs(uploaded_files)
     expected_cols = ['timeStamp', 'ntc_1530', 'rawPd1', 'rawPd2']
 
     if not all(col in df.columns for col in expected_cols):
