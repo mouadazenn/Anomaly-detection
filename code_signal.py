@@ -8,6 +8,8 @@ from scipy.signal import butter, filtfilt
 
 st.title("📈 Pd1 / Pd2 Signal Analysis Dashboard")
 
+uploaded_files = st.file_uploader("Upload CSV Files", type="csv", accept_multiple_files=True)
+
 # === Function: Merge uploaded CSVs ===
 def merge_uploaded_csvs(uploaded_files):
     dfs = []
@@ -21,6 +23,7 @@ def merge_uploaded_csvs(uploaded_files):
         return None
     merged_df = pd.concat(dfs, ignore_index=True)
     return merged_df
+
 
 # === Signal Processing Functions ===
 def bandpass_filter(signal, lowcut, highcut, fs, order=4):
