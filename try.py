@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from numpy.fft import rfft, rfftfreq
+from numpy.fft import rfft, rfftfreq, fft, fftfreq
 from scipy.signal import butter, filtfilt
 
 # === STREAMLIT UI ===
@@ -38,8 +38,8 @@ def bandpass_filter(signal, lowcut, highcut, fs, order=4):
 
 def compute_fft(signal, fs):
     N = len(signal)
-    fft_values = rfft(signal)
-    freqs = rfftfreq(N, d=1/fs)
+    fft_values = fft(signal)
+    freqs = fftfreq(N, d=1/fs)
     return freqs, np.abs(fft_values)
 
 if uploaded_files:

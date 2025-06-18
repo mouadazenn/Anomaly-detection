@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from numpy.fft import rfft, rfftfreq
+from numpy.fft import rfft, rfftfreq, fft, fftfreq
 from scipy.signal import butter, filtfilt
 from scipy.signal import fftconvolve
 from math import floor
@@ -66,8 +66,8 @@ def bandpass_filter_5(signal, fs, highCut=16):
 
 def compute_fft(signal, fs):
     N = len(signal)
-    fft_vals = rfft(signal)
-    freqs = rfftfreq(N, d=1/fs)
+    fft_vals = fft(signal)
+    freqs = fftfreq(N, d=1/fs)
     return freqs, np.abs(fft_vals)
 
 # === Upload UI ===
