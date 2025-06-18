@@ -78,9 +78,6 @@ if uploaded_files:
     st.success("✅ Data loaded")
  
 
-
-
-
     # === Time parsing ===
     df['time'] = df['timeStamp'].astype(str)
     if df['time'].str.contains(",").any():
@@ -141,6 +138,8 @@ if uploaded_files:
     st.plotly_chart(fig_scatter, use_container_width=True)
 
     st.subheader("📊 FFT")
+    print(filtered_pd1[:10])
+    
     f1, fft1 = compute_fft(filtered_pd1, fs)
     f2, fft2 = compute_fft(filtered_pd2, fs)
     fig_fft = go.Figure()
