@@ -76,14 +76,9 @@ uploaded_files = st.file_uploader("📁 Upload CSV Files", type="csv", accept_mu
 if uploaded_files:
     df = merge_uploaded_csvs(uploaded_files)
     st.success("✅ Data loaded")
-    # Step 1: Parse timestamp to datetime
-    df['datetime'] = pd.to_datetime(df['timeStamp'], errors='coerce')
+ 
 
-# Step 2: Drop rows where parsing failed
-    df = df.dropna(subset=['datetime'])
 
-# Step 3: Create relative time in seconds
-    df['relative_time'] = (df['datetime'] - df['datetime'].iloc[0]).dt.total_seconds()
 
 
     # === Time parsing ===
